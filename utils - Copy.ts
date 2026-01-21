@@ -1,6 +1,6 @@
+
 import { format, eachDayOfInterval, isSaturday, parseISO } from 'date-fns';
 import { arDZ } from 'date-fns/locale';
-import { Rank } from './types';
 
 export const formatDate = (dateStr: string) => {
   return format(parseISO(dateStr), 'EEEE d MMMM yyyy', { locale: arDZ });
@@ -11,17 +11,6 @@ export const formatDate = (dateStr: string) => {
  */
 export const formatDateKey = (date: Date) => {
   return format(date, 'yyyy-MM-dd');
-};
-
-/**
- * دالة ذكية لتوليد رمز الفوج بناءً على الرتبة (أ، ث، م)
- */
-export const getGroupLabel = (rank: Rank | string, groupNum: number | string) => {
-  let prefix = 'ف'; // الافتراضي
-  if (rank === Rank.CLASS_1 || rank === 'أستاذ قسم أول') prefix = 'أ';
-  else if (rank === Rank.CLASS_2 || rank === 'أستاذ قسم ثاني') prefix = 'ث';
-  else if (rank === Rank.DISTINGUISHED || rank === 'أستاذ مميز') prefix = 'م';
-  return `${prefix}${groupNum}`;
 };
 
 export const getSessionDays = (startDate: string, endDate: string) => {

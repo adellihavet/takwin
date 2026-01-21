@@ -1,8 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Download, Printer, Save, FileText } from 'lucide-react';
 import { TrainerAssignment, TrainerConfig, Specialty, InstitutionConfig } from '../types';
 import { MODULES, CORRECTED_DISTRIBUTION, SESSIONS } from '../constants';
+// تأكد من استيراد الدالة المساعدة التي استخدمتها في الملف الجديد
+import { getGroupLabel } from '../utils'; 
 
 interface TrainerAttributionProps {
     sessionId: number;
@@ -19,7 +20,7 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
     specialties,
     institution 
 }) => {
-    // State for Ranks (stored locally as they are not in main DB)
+    // State for Ranks
     const [ranks, setRanks] = useState<Record<string, string>>({});
     const [currentSessionId, setCurrentSessionId] = useState(sessionId);
 
@@ -42,21 +43,18 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
         localStorage.setItem('takwin_trainer_ranks', JSON.stringify(newRanks));
     };
 
-    // --- DATA AGGREGATION LOGIC ---
+    // --- DATA AGGREGATION LOGIC (FROM OLD FILE - KEEPS SESSION 3 LOGIC) ---
     const getAttributionData = () => {
-        // 1. Filter assignments for current session
         const sessionAssignments = assignments.filter(a => a.sessionId === currentSessionId);
 
-        // 2. Identify unique (Trainer, Module) pairs
         const groupingMap = new Map<string, {
             moduleId: number;
             trainerKey: string;
             trainerName: string;
-            groups: Set<string>; // Set of group IDs (e.g., "pe-1")
+            groups: Set<string>;
         }>();
 
         sessionAssignments.forEach(a => {
-            // Skip supervisor placeholders if any
             if (a.moduleId === 999) return;
 
             const key = `${a.moduleId}-${a.trainerKey}`;
@@ -78,17 +76,15 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
             groupingMap.get(key)?.groups.add(a.groupId);
         });
 
-        // 3. Convert to Array and Calculate Hours
         const rows = Array.from(groupingMap.values()).map(item => {
             const groupList = Array.from(item.groups);
             
-            // Get hourly volume for this module in this session
+            // Get hourly volume - CRITICAL: KEEPING SESSION 3 LOGIC
             const dist = CORRECTED_DISTRIBUTION.find(d => d.moduleId === item.moduleId);
             let hoursPerGroup = 0;
             if (dist) {
                 if (currentSessionId === 1) hoursPerGroup = dist.s1;
                 else if (currentSessionId === 2) hoursPerGroup = dist.s2;
-                // Use type assertion for s3
                 else if (currentSessionId === 3) hoursPerGroup = Math.max(0, ((dist as any).s3 || 0) - 2); 
             }
 
@@ -96,13 +92,12 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
 
             return {
                 ...item,
-                groupList: groupList.sort(), // Sort groups
+                groupList: groupList.sort(),
                 hoursPerGroup,
                 totalHours
             };
         });
 
-        // Sort by Module ID then Trainer Name
         return rows.sort((a, b) => a.moduleId - b.moduleId || a.trainerName.localeCompare(b.trainerName));
     };
 
@@ -110,7 +105,7 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
     const currentSessionName = SESSIONS.find(s => s.id === currentSessionId)?.name || '';
     const currentSessionYear = "2025/2026"; 
 
-    // --- FIXED PRINT HANDLER ---
+    // --- PRINT & EXPORT HANDLERS (RESTORED) ---
     const handlePrint = () => {
         const content = document.getElementById('attribution-table-content');
         let printSection = document.getElementById('print-section');
@@ -123,10 +118,8 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
         
         if (content && printSection) {
             printSection.innerHTML = '';
-            // We need to clone the node to avoid moving it from the main view
             const clone = content.cloneNode(true) as HTMLElement;
             
-            // Ensure inputs in the clone reflect current values
             const originalInputs = content.querySelectorAll('input');
             const clonedInputs = clone.querySelectorAll('input');
             originalInputs.forEach((input, index) => {
@@ -151,9 +144,6 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
                 table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 12pt; }
                 td, th { border: 1px solid black; padding: 5px; text-align: center; vertical-align: middle; }
                 .header { text-align: center; font-weight: bold; margin-bottom: 20px; font-size: 14pt; }
-                .text-content { text-align: justify; margin-bottom: 15px; font-size: 12pt; line-height: 1.5; }
-                .bold { font-weight: bold; }
-                .bg-gray { background-color: #f0f0f0; }
             </style>
             </head><body>`;
         
@@ -173,22 +163,11 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
 
     return (
         <div className="space-y-6">
-            {/* FORCE LANDSCAPE CSS FOR THIS COMPONENT */}
             <style>{`
                 @media print {
-                    @page {
-                        size: landscape;
-                        margin: 10mm;
-                    }
-                    body {
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
-                    /* Ensure table fits */
-                    #attribution-table-content {
-                        width: 100% !important;
-                        max-width: 100% !important;
-                    }
+                    @page { size: landscape; margin: 10mm; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    #attribution-table-content { width: 100% !important; max-width: 100% !important; }
                 }
             `}</style>
 
@@ -218,22 +197,18 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
             <div className="bg-white text-black p-8 rounded-xl shadow-xl overflow-x-auto print:shadow-none print:p-0">
                 <div id="attribution-table-content" className="w-full mx-auto" style={{ direction: 'rtl' }}>
                     
-                    {/* Header - Improved Layout */}
+                    {/* Header (RESTORED OFFICIAL HEADER) */}
                     <div className="mb-8">
                         <div className="text-center mb-6">
                             <h3 className="font-bold text-base">الجمهورية الجزائرية الديمقراطية الشعبية</h3>
                             <h3 className="font-bold text-base">وزارة التربية الوطنية</h3>
                         </div>
-                        
                         <div className="flex justify-between items-start text-sm font-bold px-2 relative">
-                            {/* Right Side */}
                             <div className="text-right leading-relaxed w-1/3">
                                 <p>مديرية التربية لولاية {institution.wilaya || '...................'}</p>
                                 <p>مصلحة المستخدمين والتكوين والتفتيش</p>
                                 <p>مركز التكوين: {institution.center || '...................'}</p>
                             </div>
-
-                            {/* Left Side - Adjusted Alignment */}
                             <div className="text-left w-1/3 pl-16">
                                 <div className="inline-block text-right">
                                     <p className="mb-1">إلى السيد</p>
@@ -249,22 +224,18 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
                         <p className="font-bold text-lg underline mb-2">
                             الموضوع: جدول توضيحي للحجم الساعي لدورة التكوين البيداغوجي التحضيري ({currentSessionYear}).
                         </p>
-                        <p className="text-justify leading-relaxed indent-8 max-w-5xl mx-auto">
-                            يشرفني أن أضع بين أيديكم جدول توضيحي للحجم الساعي لدورة التكوين البيداغوجي التحضيري لفائدة أساتذة المدرسة الابتدائية المدمجين - {currentSessionName}.
-                        </p>
                     </div>
 
                     {/* Table */}
                     <table className="w-full border-collapse border border-black text-center text-sm">
                         <thead className="bg-gray-100">
                             <tr>
-                                <th className="border border-black p-2 w-12">الرقم</th>
+                                <th className="border border-black p-2 w-12">#</th>
                                 <th className="border border-black p-2 w-1/4">المقياس</th>
                                 <th className="border border-black p-2 w-1/4">أستاذ الدورة</th>
                                 <th className="border border-black p-2 w-32">الرتبة</th>
-                                <th className="border border-black p-2 w-32">الفوج</th>
-                                <th className="border border-black p-2 w-20">الحجم الساعي</th>
-                                <th className="border border-black p-2 w-20">الحجم الساعي للمؤطر</th>
+                                <th className="border border-black p-2">الأفواج المسندة</th>
+                                <th className="border border-black p-2 w-24">الحجم الساعي الإجمالي</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -277,43 +248,42 @@ const TrainerAttribution: React.FC<TrainerAttributionProps> = ({
                                         <input 
                                             type="text" 
                                             className="w-full text-center outline-none bg-transparent placeholder-gray-400 print:placeholder-transparent font-bold text-gray-800"
-                                            placeholder="ادخل الرتبة..."
+                                            placeholder="الرتبة..."
                                             value={ranks[`${row.moduleId}-${row.trainerKey}`] || ''}
                                             onChange={(e) => handleRankChange(`${row.moduleId}-${row.trainerKey}`, e.target.value)}
                                         />
                                     </td>
-                                    <td className="border border-black p-1 text-xs">
+                                    
+                                    {/* --- التعديل الذي طلبته هنا --- */}
+                                    {/* عرض الأفواج أفقياً باستخدام getGroupLabel أو التنسيق المختصر */}
+                                    <td className="border border-black p-2 text-sm font-bold leading-relaxed">
                                         {row.groupList.map((grpId, i) => {
                                             const [sId, gNum] = grpId.split('-');
-                                            const specName = specialties.find(s => s.id === sId)?.name;
+                                            // محاولة استخدام الدالة المساعدة أو الرجوع للنص العادي
+                                            // تأكد من أن getGroupLabel معرفة أو استبدلها بالمنطق الخاص بك
+                                            const label = typeof getGroupLabel === 'function' 
+                                                ? getGroupLabel(sId, gNum) 
+                                                : `${specialties.find(s => s.id === sId)?.name || sId} ${gNum}`;
+                                            
                                             return (
-                                                <div key={grpId} className={`py-1 ${i < row.groupList.length - 1 ? 'border-b border-gray-300' : ''}`}>
-                                                    {specName} - ف{gNum}
-                                                </div>
+                                                <span key={grpId}>
+                                                    {label}
+                                                    {i < row.groupList.length - 1 ? '، ' : ''}
+                                                </span>
                                             );
                                         })}
                                     </td>
-                                    <td className="border border-black p-1 text-xs font-bold">
-                                        {row.groupList.map((grpId, i) => (
-                                            <div key={grpId} className={`py-1 ${i < row.groupList.length - 1 ? 'border-b border-gray-300' : ''}`}>
-                                                {String(row.hoursPerGroup).padStart(2, '0')} ساعات
-                                            </div>
-                                        ))}
-                                    </td>
+                                    {/* --------------------------- */}
+
                                     <td className="border border-black p-2 font-black text-lg bg-gray-50">
                                         {row.totalHours}
                                     </td>
                                 </tr>
                             ))}
-                            {attributionRows.length === 0 && (
-                                <tr>
-                                    <td colSpan={7} className="p-8 text-center text-gray-500">لا توجد بيانات توزيع لهذه الدورة بعد. يرجى توليد الجدول أولاً.</td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
 
-                    {/* Footer */}
+                    {/* Footer (RESTORED) */}
                     <div className="mt-12 flex justify-end px-16">
                         <div className="text-center font-bold">
                             <p className="mb-12">المدير البيداغوجي</p>

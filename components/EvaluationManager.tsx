@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, Upload, FileSpreadsheet, Printer, Award, Calculator, Settings, BookOpen, UserCheck, Calendar, Clock, Users, ChevronDown, ChevronUp, AlertCircle, Save, Eye, X, FileUp, Edit2, Lock, Unlock, FileText } from 'lucide-react';
 import { Trainee, Specialty, EvaluationDatabase, InstitutionConfig, TrainerConfig, TrainerAssignment, TraineeGrades } from '../types';
 import { SPECIALTIES as DEFAULT_SPECIALTIES, MODULES } from '../constants';
+import { getGroupLabel } from '../utils'; // تمت الإضافة: استيراد دالة التسمية
 import ExamManager from './ExamManager';
 
 const EvaluationManager: React.FC = () => {
@@ -83,17 +83,14 @@ const EvaluationManager: React.FC = () => {
     // --- LOGIC: UPDATE SINGLE GRADE ---
     const handleGradeChange = (traineeId: string, value: string, type: 'module' | 'report') => {
         const numValue = parseFloat(value);
-        // Allow empty string for deletion, otherwise check bounds
         if (value !== '' && (isNaN(numValue) || numValue < 0 || numValue > 20)) return;
 
         const valToSave = value === '' ? undefined : numValue;
 
         setGrades(prev => {
-            // Fix: Initialize with empty modules object correctly
             const traineeGrades: TraineeGrades = prev[traineeId] || { modules: {} };
             
             if (type === 'module') {
-                // Fix: Safely access modules
                 const moduleGrades = (traineeGrades.modules || {})[selectedModuleId] || {};
                 return {
                     ...prev,
@@ -214,13 +211,13 @@ const EvaluationManager: React.FC = () => {
     };
 
     const handleDownloadTemplate = (list: Trainee[], filename: string, typeName: string) => {
-        // We use a specific header to identify the file type if needed, but mainly we rely on column position
         const colName = typeName === 'report' ? 'علامة_التقرير' : 
                         typeName === 'exam' ? 'علامة_الامتحان' : 
                         `علامة_${typeName}`; // S1, S2, S3
 
         const headers = ["ID_SYSTEM", "اللقب", "الاسم", "التخصص_والفوج", colName];
-        const rows = list.map(t => `"${t.id}","${t.surname}","${t.name}","${specialties.find(s=>s.id===t.specialtyId)?.name} ${t.groupId}",""`);
+        // تحديث: استخدام getGroupLabel في ملف التصدير أيضاً لسهولة القراءة
+        const rows = list.map(t => `"${t.id}","${t.surname}","${t.name}","${specialties.find(s=>s.id===t.specialtyId)?.name} ${getGroupLabel(t.rank, t.groupId)}",""`);
         const csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -239,7 +236,6 @@ const EvaluationManager: React.FC = () => {
         const reader = new FileReader();
         reader.onload = (evt) => {
             const text = evt.target?.result as string;
-            // Robust splitting for lines (CRLF or LF)
             const lines = text.split(/\r\n|\n|\r/); 
             let updatedCount = 0;
             
@@ -248,26 +244,18 @@ const EvaluationManager: React.FC = () => {
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
-                
-                // Robust splitting for CSV columns (handle quoted strings containing commas if any, though our export uses quotes)
-                // Regex: Split by comma ONLY if not inside quotes
                 const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                
                 if (!parts || parts.length < 1) continue;
 
-                // Remove quotes from ID and Value
                 const id = parts[0].replace(/^"|"$/g, '').trim(); 
-                // Mark is usually the last column (index 4 in our template)
-                // We search for the last non-empty part or specifically index 4
                 let gradeStr = '';
                 if (parts.length >= 5) {
                     gradeStr = parts[parts.length - 1].replace(/^"|"$/g, '').trim();
                 }
 
-                // If grade is empty, skip
                 if (!gradeStr) continue;
 
-                const grade = parseFloat(gradeStr.replace(',', '.')); // Handle decimal comma
+                const grade = parseFloat(gradeStr.replace(',', '.'));
 
                 if (id && !isNaN(grade)) {
                     if (grade >= 0 && grade <= 20) {
@@ -293,7 +281,6 @@ const EvaluationManager: React.FC = () => {
         };
         reader.readAsText(file);
         
-        // Reset inputs
         if (fileInputRef.current) fileInputRef.current.value = '';
         if (reportInputRef.current) reportInputRef.current.value = '';
     };
@@ -312,7 +299,8 @@ const EvaluationManager: React.FC = () => {
     const getAllGroupsList = () => {
         const list: {value: string, label: string}[] = [];
         specialties.forEach(s => {
-            for(let i=1; i<=s.groups; i++) list.push({ value: `${s.id}-${i}`, label: `${s.name} - فوج ${i}` });
+            // تحديث: استخدام getGroupLabel في القوائم المنسدلة
+            for(let i=1; i<=s.groups; i++) list.push({ value: `${s.id}-${i}`, label: `${s.name} - ${getGroupLabel(s.rank, i)}` });
         });
         return list;
     };
@@ -356,7 +344,6 @@ const EvaluationManager: React.FC = () => {
         if (!selectedTraineeForDetail) return null;
         
         const t = selectedTraineeForDetail;
-        // Fix: Use default empty modules object safely
         const tGrades: TraineeGrades = grades[t.id] || { modules: {} };
         const { globalCC, globalExam, report, finalAvg, sumWeightedCC, sumWeightedExam, totalCoeff } = calculateTraineeResults(t.id);
 
@@ -376,7 +363,6 @@ const EvaluationManager: React.FC = () => {
                     </div>
                     
                     <div className="p-6 overflow-y-auto" id="grade-sheet-modal-content">
-                        {/* Header for Print */}
                         <div className="hidden print:block text-center mb-6 pb-4 border-b-2 border-black">
                             <h3 className="text-lg font-bold">الجمهورية الجزائرية الديمقراطية الشعبية</h3>
                             <h3 className="text-lg font-bold">وزارة التربية الوطنية</h3>
@@ -390,7 +376,8 @@ const EvaluationManager: React.FC = () => {
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-bold text-gray-500">التخصص / الفوج:</p>
-                                <p className="text-lg font-bold">{specialties.find(s=>s.id===t.specialtyId)?.name} / ف{t.groupId}</p>
+                                {/* تحديث: استخدام getGroupLabel هنا */}
+                                <p className="text-lg font-bold">{specialties.find(s=>s.id===t.specialtyId)?.name} - {getGroupLabel(t.rank, t.groupId)}</p>
                             </div>
                             <div className="text-left">
                                 <p className="text-sm font-bold text-gray-500">تاريخ الميلاد:</p>
@@ -419,7 +406,6 @@ const EvaluationManager: React.FC = () => {
                             </thead>
                             <tbody>
                                 {MODULES.map(m => {
-                                    // Fix: Safely access module grades
                                     const mg = (tGrades.modules || {})[m.id] || {};
                                     const s1 = mg.s1 || 0;
                                     const s2 = mg.s2 || 0;
@@ -501,7 +487,6 @@ const EvaluationManager: React.FC = () => {
     // --- RENDER ---
     return (
         <div className="space-y-6 animate-fadeIn pb-24">
-            {/* CSS to hide ghost print section on screen (Added Fix) */}
             <style>{`
                 @media screen {
                     #print-section { display: none !important; }
@@ -511,7 +496,6 @@ const EvaluationManager: React.FC = () => {
                 }
             `}</style>
 
-            {/* Modal */}
             {selectedTraineeForDetail && <GradeDetailModal />}
 
             {/* Header Tabs */}
@@ -635,7 +619,8 @@ const EvaluationManager: React.FC = () => {
                                     >
                                         <option value={0}>كل الأفواج</option>
                                         {selectedSpec !== 'all' && Array.from({length: specialties.find(s=>s.id === selectedSpec)?.groups || 0}).map((_, i) => (
-                                            <option key={i+1} value={i+1}>فوج {i+1}</option>
+                                            // تحديث: استخدام getGroupLabel في قائمة التصفية
+                                            <option key={i+1} value={i+1}>{getGroupLabel(specialties.find(s=>s.id === selectedSpec)?.rank, i+1)}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -670,7 +655,6 @@ const EvaluationManager: React.FC = () => {
                                     </thead>
                                     <tbody className="divide-y divide-slate-800">
                                         {getFilteredTrainees().map((t, idx) => {
-                                            // Fix: Safely access grades
                                             const val = (grades[t.id]?.modules || {})[selectedModuleId]?.[selectedTerm];
                                             const cellKey = `${t.id}-module`;
                                             const isEditing = editingCell === cellKey;
@@ -682,7 +666,10 @@ const EvaluationManager: React.FC = () => {
                                                         {t.surname} {t.name}
                                                     </td>
                                                     <td className="p-3 text-slate-400">
-                                                        <span className="bg-slate-800 px-2 py-0.5 rounded text-xs">فوج {t.groupId}</span>
+                                                        {/* تحديث: استخدام getGroupLabel في جدول الحجز */}
+                                                        <span className="bg-slate-800 px-2 py-0.5 rounded text-xs font-black text-slate-300">
+                                                            {getGroupLabel(t.rank, t.groupId)}
+                                                        </span>
                                                     </td>
                                                     <td className="p-3 text-center flex justify-center items-center gap-2">
                                                         {isEditing ? (

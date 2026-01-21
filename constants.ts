@@ -11,7 +11,7 @@ export const SPECIALTIES: Specialty[] = [
 export const MODULES: (Module & { description?: string })[] = [
   { id: 1, title: 'التقييم والمعالجة البيداغوجية', shortTitle: 'التقييم والمعالجة', hours: 25, coefficient: 3 },
   { id: 2, title: 'المناهج التعليمية', shortTitle: 'المناهج التعليمية', hours: 20, coefficient: 3 },
-  { id: 3, title: 'التسيير التربوي (قسم 1)', shortTitle: 'تسيير تربوي 1', hours: 15, coefficient: 2 },
+  { id: 3, title: 'التسيير التربوي (قسم 1)', shortTitle: 'تسيير تربوي', hours: 15, coefficient: 2 },
   { id: 6, title: 'التأطير والمتابعة (قسم 2)', shortTitle: 'تأطير ومتابعة', hours: 15, coefficient: 2 },
   { id: 7, title: 'التسيير والتنشيط التربوي والإداري (مميز)', shortTitle: 'تسيير وتنشيط', hours: 15, coefficient: 2 },
   { id: 4, title: 'تكنولوجيات الإعلام والاتصال', shortTitle: 'تكنولوجيات الإعلام', hours: 10, coefficient: 1 },

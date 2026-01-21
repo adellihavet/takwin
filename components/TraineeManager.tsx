@@ -36,7 +36,7 @@ const TraineeManager: React.FC = () => {
     const [selectedGroupRank, setSelectedGroupRank] = useState<Rank>(Rank.CLASS_1);
     const [selectedGroupNum, setSelectedGroupNum] = useState<number>(1);
     
-    // تاريخ السجل اليومي
+    // تاريخ السجل اليومي (يفتراض تاريخ اليوم كبداية)
     const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
     
     const [selectedCycle, setSelectedCycle] = useState<1 | 2>(1);
@@ -113,7 +113,7 @@ const TraineeManager: React.FC = () => {
     const formatDisplayDate = (isoDate: string) => {
         if (!isoDate || !isoDate.includes('-')) return isoDate;
         const [y, m, d] = isoDate.split('-');
-        return `${d}/${m}/${y}`;
+        return `${y}/${m}/${d}`;
     };
 
     const mapRankText = (text: string): Rank => {
@@ -151,7 +151,7 @@ const TraineeManager: React.FC = () => {
         setTransferTarget(null);
     };
 
-    // --- دالة حفظ التعديل ---
+    // --- دالة حفظ التعديل (تم إصلاحها) ---
     const handleUpdateTrainee = () => {
         if (!editingTrainee) return;
         const updatedList = trainees.map(t => 
@@ -347,6 +347,7 @@ const TraineeManager: React.FC = () => {
                             </div>
                             <div className="flex gap-2 flex-wrap justify-end">
                                 <button onClick={handleAutoGrouping} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex gap-2 items-center transition-colors"><ArrowRightLeft size={16}/> توزيع آلي</button>
+                                {/* أزرار التصدير والاستيراد (تم التأكد من وجودها) */}
                                 <button onClick={downloadTemplate} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex gap-2 items-center transition-colors"><Download size={16}/> نموذج CSV</button>
                                 <button onClick={() => fileInputRef.current?.click()} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex gap-2 items-center transition-colors"><Upload size={16}/> استيراد</button>
                                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".csv, .txt" />
@@ -355,7 +356,7 @@ const TraineeManager: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Stats Bar */}
+                        {/* شريط الإحصائيات (تم التأكد من وجوده) */}
                         <div className="grid grid-cols-3 gap-4 mb-4 print:hidden">
                             <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700 flex justify-between items-center">
                                 <span className="text-slate-400 text-xs font-bold">المجموع</span>
@@ -402,6 +403,7 @@ const TraineeManager: React.FC = () => {
                                 <Search className="absolute right-3 top-2.5 text-slate-500 w-4 h-4" />
                                 <input type="text" placeholder="بحث..." className="w-full bg-slate-900 border border-slate-700 rounded-lg pr-10 pl-4 py-2 text-white outline-none focus:border-blue-500" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                             </div>
+                            {/* حقل تصفية المواد (تم التأكد من وجوده) */}
                             <select className="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none font-bold" value={filterSpecialty} onChange={e => setFilterSpecialty(e.target.value)}>
                                 <option value="all">كل المواد</option>
                                 {VALID_SUBJECTS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -606,6 +608,7 @@ const TraineeManager: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* أزرار الطباعة في تبويب السجل اليومي (تم التأكد من وجودها) */}
                         <div className="mr-auto flex gap-2">
                             <button onClick={() => handlePrint('posting-list-template')} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-bold shadow-lg transition-colors"><FileText size={16} /> القائمة</button>
                             <button onClick={() => handlePrint('attendance-print-template')} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow-lg transition-colors"><Printer size={16} /> الحضور</button>

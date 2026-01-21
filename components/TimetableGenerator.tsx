@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { SESSIONS, MODULES, RANK_DISTRIBUTION, SPECIALTIES, CORRECTED_DISTRIBUTION } from '../constants';
-import { getWorkingDays, formatDate } from '../utils';
+// Added getGroupLabel here
+import { getWorkingDays, formatDate, getGroupLabel } from '../utils';
 import { GroupSchedule, TrainerConfig, TrainerAssignment, InstitutionConfig, Rank, Module } from '../types';
 import { 
   RefreshCw, Table2, Edit3, Printer, BarChart3, Wand2, Layers, CheckCircle2, AlertTriangle, Sparkles, Clock
@@ -43,13 +43,23 @@ const TimetableGenerator: React.FC = () => {
     return name && name.length > 1 ? `PRO:${name.toLowerCase()}` : `RAW:${mId}-${key}`;
   };
 
+  // --- UPDATED FUNCTION: Uses getGroupLabel for naming ---
   const getAllGroupsList = () => {
       const groups: { id: string, rank: Rank, name: string }[] = [];
       Object.entries(institution.rankGroups || {}).forEach(([rank, num]) => {
-          for(let i=1; i<=num; i++) groups.push({ id: `${rank}-${i}`, rank: rank as Rank, name: `${rank} - فوج ${i}` });
+          for(let i=1; i<=num; i++) {
+              // This is the fix you wanted: dynamic naming
+              const label = getGroupLabel ? getGroupLabel(rank, i) : `فوج ${i}`;
+              groups.push({ 
+                  id: `${rank}-${i}`, 
+                  rank: rank as Rank, 
+                  name: `${rank} - ${label}` 
+              });
+          }
       });
       return groups;
   };
+  // ------------------------------------------------------
 
   const getAllTrainersList = () => {
       const list: { key: string, name: string, moduleId: number }[] = [];
