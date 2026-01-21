@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: '/', // لضمان عمل الروابط بشكل صحيح على الدومين المخصص
+      base: './', // استخدام المسار النسبي لضمان التوافق مع GitHub Pages
       server: {
         port: 3000,
         host: '0.0.0.0',
@@ -19,7 +19,12 @@ export default defineConfig(({ mode }) => {
         outDir: 'dist',
         assetsDir: 'assets',
         sourcemap: false,
-        minify: true,
+        minify: 'esbuild',
+        rollupOptions: {
+          input: {
+            main: path.resolve(__dirname, 'index.html'),
+          },
+        },
       },
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY || ''),
