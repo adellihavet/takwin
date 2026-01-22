@@ -378,7 +378,7 @@ const StrategicSection: React.FC<{ label: string, value: string, onChange: (v: s
     </div>
 );
 
-// --- 1. قالب التقرير الأولي ---
+// --- 1. قالب التقرير الأولي (تم تعديل عمود الرتبة) ---
 const InitialReportDoc: React.FC<{ institution: any, stats: any[], instructors: any[], data: SummaryData }> = ({ institution, stats, instructors, data }) => {
     const totalTrainees = stats.reduce((acc, s) => acc + s.total, 0);
     const targetLevel = stats[0]?.level || 'ابتدائي';
@@ -406,7 +406,9 @@ const InitialReportDoc: React.FC<{ institution: any, stats: any[], instructors: 
                         <tbody>
                             {stats.map((s, i) => (
                                 <tr key={i}>
-                                    <td className="border border-black font-bold">أستاذ {s.level} ({s.rank})</td>
+                                    {/* --- التعديل تم هنا: إظهار الرتبة فقط بدون الطور --- */}
+                                    <td className="border border-black font-bold">{s.rank}</td>
+                                    
                                     <td className="border border-black">{s.spec}</td>
                                     <td className="border border-black">{s.level}</td>
                                     <td className="border border-black font-bold">{s.total}</td>
@@ -425,6 +427,7 @@ const InitialReportDoc: React.FC<{ institution: any, stats: any[], instructors: 
                         <thead className="bg-gray-100"><tr><th className="w-40">الرتبة</th><th>قائمة المشرفين على العملية التكوينية</th><th>قائمة المؤطرين</th><th>ملاحظات</th></tr></thead>
                         <tbody>
                             <tr>
+                                {/* يمكنك أيضاً تعديل هذا السطر إذا أردت إزالة كلمة "التعليم" */}
                                 <td className="border border-black font-black">أستاذ التعليم ال{targetLevel}</td>
                                 <td className="border border-black text-right px-2 leading-relaxed font-bold">
                                     <p>• {institution.director} (المدير البيداغوجي)</p>
