@@ -44,11 +44,11 @@ export interface Module {
 }
 
 export interface TraineeGrades {
-  continuousAssessment: number;
-  internship: number;
-  finalReport: number;
-  finalExam: number;
-  modules?: Record<number, { s1: number; s2: number; s3: number; exam: number }>;
+  continuousAssessment?: number;
+  internship?: number;
+  finalReport?: number;
+  finalExam?: number;
+  modules?: Record<number, { s1?: number; s2?: number; s3?: number; exam?: number }>;
   report?: number;
 }
 
@@ -59,11 +59,11 @@ export interface InstitutionConfig {
   institute: string;
   center: string;
   director: string;
-  rankGroups?: Record<string, number>; // تخزين عدد الأفواج لكل رتبة
+  rankGroups?: Record<string, number>; 
 }
 
 export interface AttendanceDetail {
-  status: 'P' | 'A';
+  status: 'P' | 'A' | 'J';
 }
 
 export type AttendanceRecord = Record<string, AttendanceDetail>;
@@ -127,9 +127,15 @@ export interface SummaryData {
   difficulties: string;
   recommendations: string;
   conclusion: string;
+  // حقول تقرير الانطلاق
+  startTime?: string;
+  roomsReadiness?: string;
+  toolsAvailability?: string;
+  scheduleAdjustment?: string;
 }
 
 export interface ReportConfig {
+  initial: SummaryData;
   s1: SummaryData;
   s2: SummaryData;
   s3: SummaryData;

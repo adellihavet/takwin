@@ -377,7 +377,7 @@ const PrintContent: React.FC<{
                 </div>
                 <div className="text-center">
                     <p className="font-bold text-sm mb-8">المدير البيداغوجي:</p>
-                    <p className="text-xs">ختم المركز</p>
+                    <p className="text-xs"></p>
                 </div>
             </div>
         </div>

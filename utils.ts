@@ -18,7 +18,7 @@ export const formatDateKey = (date: Date) => {
  */
 export const getGroupLabel = (rank: Rank | string, groupNum: number | string) => {
   let prefix = 'ف'; // الافتراضي
-  if (rank === Rank.CLASS_1 || rank === 'أستاذ قسم أول') prefix = 'أ';
+  if (rank === Rank.CLASS_1 || rank === 'قسم أول') prefix = 'أ';
   else if (rank === Rank.CLASS_2 || rank === 'أستاذ قسم ثاني') prefix = 'ث';
   else if (rank === Rank.DISTINGUISHED || rank === 'أستاذ مميز') prefix = 'م';
   return `${prefix}${groupNum}`;

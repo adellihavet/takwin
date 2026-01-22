@@ -436,7 +436,7 @@ const PrintContent: React.FC<{
             </div>
             <div className="mt-auto flex justify-between items-end px-8 pb-0 pt-2">
                 <div className="text-center"><p className="font-bold text-xs mb-8">استلمت نسخة من البرنامج:</p><p className="text-[10px]">إمضاء الأستاذ(ة): ....................</p></div>
-                <div className="text-center"><p className="font-bold text-xs mb-8">المدير البيداغوجي:</p><p className="text-[10px]">الختم والتوقيع</p></div>
+                <div className="text-center"><p className="font-bold text-xs mb-8">المدير البيداغوجي:</p><p className="text-[10px]"></p></div>
             </div>
         </div>
     );

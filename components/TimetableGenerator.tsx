@@ -272,7 +272,7 @@ const TimetableGenerator: React.FC = () => {
                 {schedule.length > 0 && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div className="bg-slate-950/50 p-6 rounded-2xl border border-slate-800 space-y-6">
-                            <h4 className="text-white font-bold flex items-center gap-2 mb-4"><Printer className="text-blue-400" /> أدوات الطباعة (6 حصص)</h4>
+                            <h4 className="text-white font-bold flex items-center gap-2 mb-4"><Printer className="text-blue-400" /> أدوات الطباعة </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <label className="text-[10px] text-slate-500 font-bold uppercase">طباعة فوج:</label>
@@ -347,7 +347,7 @@ const PrintGroupPage = ({ group, institution, currentSession, workingDays, train
         <div className="print-header">
             <p className="font-bold text-[10px]">الجمهورية الجزائرية الديمقراطية الشعبية</p>
             <p className="text-[10px]">مديرية التربية لولاية {institution.wilaya} | مركز: {institution.center}</p>
-            <h1 className="text-xl font-black mt-2 border-2 border-black inline-block px-8 py-1 uppercase">جدول توقيت الفوج التربوي (6 حصص)</h1>
+            <h1 className="text-xl font-black mt-2 border-2 border-black inline-block px-8 py-1 uppercase">جدول توقيت الفوج التربوي</h1>
             <p className="font-bold mt-1 text-lg">{group.name} - {currentSession.name}</p>
         </div>
         <table className="print-table">
@@ -373,14 +373,14 @@ const PrintGroupPage = ({ group, institution, currentSession, workingDays, train
                 ))}
             </tbody>
         </table>
-        <div className="flex justify-between mt-auto pt-8 px-20 font-bold text-xs"><p>المدير البيداغوجي</p><p>رئيس المركز</p></div>
+        <div className="flex justify-between mt-auto pt-8 px-20 font-bold text-xs"><p></p><p>المدير البيداغوجي</p></div>
     </div>
 );
 
 const PrintTrainerPage = ({ trainer, institution, currentSession, workingDays, trainerAssignments, selectedSessionId }: any) => (
     <div className="print-page" dir="rtl">
         <div className="print-header">
-            <h1 className="text-xl font-black border-2 border-black inline-block px-8 py-1 mt-2">جدول توقيت الأستاذ المكون (6 حصص)</h1>
+            <h1 className="text-xl font-black border-2 border-black inline-block px-8 py-1 mt-2">جدول توقيت الأستاذ المكون</h1>
             <p className="font-bold mt-2 text-lg">الأستاذ(ة): {trainer.name}</p>
             <p className="text-sm">المقياس: {MODULES.find(m => m.id === trainer.moduleId)?.title}</p>
         </div>
@@ -398,7 +398,7 @@ const PrintTrainerPage = ({ trainer, institution, currentSession, workingDays, t
                 ))}
             </tbody>
         </table>
-        <div className="flex justify-between mt-auto pt-8 px-20 font-bold text-xs"><p>المدير البيداغوجي</p><p>رئيس المركز</p></div>
+        <div className="flex justify-between mt-auto pt-8 px-20 font-bold text-xs"><p></p><p>المدير البيداغوجي</p></div>
     </div>
 );
 
