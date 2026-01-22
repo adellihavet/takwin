@@ -24,7 +24,7 @@ const formatArabicDate = (dateStr: string) => {
     }
 };
 
-// --- إعدادات التقارير (تم تحديثها لتشمل التقرير الأولي وحذف الدورة 3) ---
+// --- إعدادات التقارير ---
 const INITIAL_REPORTS: ReportConfig = {
     initial: { introduction: '', pedagogicalActivities: '', administrativeConditions: '', difficulties: '', recommendations: '', conclusion: '', startTime: '08:00', roomsReadiness: 'جاهزة ومهيأة بالكامل', toolsAvailability: 'متوفرة كلياً', scheduleAdjustment: 'تم ضبط رزنامة الحصص وتوزيعها', adminDirector: '', deputyPedagogicalDirector: '' },
     s1: { introduction: 'بناءً على مقتضيات القرار الوزاري رقم 250، وتجسيداً للمخطط الوطني للتكوين، نضع بين أيديكم حصيلة الدورة الأولى التي ركزت على إرساء المعالم الكبرى للعملية التربوية وتوطيد المفاهيم البيداغوجية القاعدية لدى الأساتذة المدمجين...', pedagogicalActivities: '', administrativeConditions: '', difficulties: '', recommendations: '', conclusion: '' },
@@ -71,16 +71,33 @@ const SummaryReport: React.FC = () => {
     const [attendance, setAttendance] = useState<AttendanceRecord>({});
     const [assignments, setAssignments] = useState<TrainerAssignment[]>([]);
     
-    // تم تحديث الحالة لتقبل المفاتيح الجديدة
     const [activeReport, setActiveReport] = useState<'initial' | 's1' | 's2' | 'final'>('initial');
     const [isListening, setIsListening] = useState<string | null>(null);
 
+    // --- تحميل البيانات (مع إصلاح مشكلة adminDirector) ---
     useEffect(() => {
+        // 1. تحميل التقارير مع دمج ذكي للبيانات
+        const savedReports = localStorage.getItem('takwin_reports_db');
+        if (savedReports) {
+            try {
+                const parsed = JSON.parse(savedReports);
+                setReports(prev => ({
+                    ...prev,
+                    ...parsed,
+                    initial: {
+                        ...prev.initial,       // القيم الافتراضية (تحتوي على الحقول الجديدة)
+                        ...(parsed.initial || {}) // القيم المحفوظة (تغطي على الافتراضية إذا وجدت)
+                    }
+                }));
+            } catch(e) { console.error("Error loading reports", e); }
+        }
+
+        // 2. تحميل باقي البيانات
         const load = (key: string, setter: any) => {
             const data = localStorage.getItem(key);
             if (data) try { setter(JSON.parse(data)); } catch(e){}
         };
-        load('takwin_reports_db', setReports);
+        
         load('takwin_institution_db', setInstitution);
         load('takwin_specialties_db', setSpecialties);
         load('takwin_trainers_db', setTrainerConfig);
@@ -89,7 +106,7 @@ const SummaryReport: React.FC = () => {
         load('takwin_assignments', setAssignments);
     }, []);
 
-    // --- 1. إحصائيات التقرير الأولي (من الملف الجديد) ---
+    // --- 1. إحصائيات التقرير الأولي ---
     const initialReportStats = useMemo(() => {
         const firstDay = SESSIONS[0].startDate;
         const stats: any[] = [];
@@ -104,7 +121,6 @@ const SummaryReport: React.FC = () => {
         groupings.forEach((list, key) => {
             const [rank, specId, level] = key.split('|');
             const total = list.length;
-            // Check if absent on first day
             const joined = list.filter(t => attendance[`${formatDateKey(firstDay)}-${t.id}`]?.status !== 'A').length;
             stats.push({
                 rank, 
@@ -128,7 +144,7 @@ const SummaryReport: React.FC = () => {
         return Array.from(namesSet).map(name => ({ name }));
     }, [trainerConfig]);
 
-    // --- 2. إحصائيات التقارير الدورية (من الملف القديم - مع تعديل حذف الدورة 3) ---
+    // --- 2. إحصائيات التقارير الدورية (تم حذف الدورة 3) ---
     const reportAnalytics = useMemo(() => {
         if (activeReport === 'initial') return null;
 
@@ -142,10 +158,9 @@ const SummaryReport: React.FC = () => {
             days.forEach((day, idx) => {
                 const dateKey = formatDateKey(day);
                 const record = attendance[`${dateKey}-${t.id}`] as AttendanceDetail | undefined;
-                if (record?.status === 'A') { // Only count absent as missed
+                if (record?.status === 'A') {
                     missedDays++;
-                    // Logic updated for 2 sessions (assuming 6 hours/day roughly or custom logic)
-                    missedHours += 5; 
+                    missedHours += 5; // افتراض 5 ساعات يومياً
                 }
             });
             return { ...t, missedDays, missedHours };
@@ -162,7 +177,7 @@ const SummaryReport: React.FC = () => {
 
         const executionTable = MODULES.map(m => {
             const dist = CORRECTED_DISTRIBUTION.find(d => d.moduleId === m.id);
-            const planned = (sessionId === 1 ? dist?.s1 : dist?.s2) || 0; // Only s1 or s2
+            const planned = (sessionId === 1 ? dist?.s1 : dist?.s2) || 0;
             const content = MODULE_CONTENTS.find(c => c.moduleId === m.id);
             const topics = (sessionId === 1 ? content?.s1Topics : content?.s2Topics) || [];
             const trainerKeys = Array.from(new Set(assignments.filter(a => a.sessionId === sessionId && a.moduleId === m.id).map(a => a.trainerKey)));
@@ -175,7 +190,6 @@ const SummaryReport: React.FC = () => {
 
     const handleSave = () => { localStorage.setItem('takwin_reports_db', JSON.stringify(reports)); alert('تم حفظ المسودة بنجاح.'); };
     
-    // --- دمج منطق التحديث ---
     const updateField = (field: keyof SummaryData, value: string) => { 
         setReports(prev => ({ ...prev, [activeReport]: { ...prev[activeReport], [field]: value } })); 
     };
@@ -190,7 +204,6 @@ const SummaryReport: React.FC = () => {
     };
 
     const handlePrint = () => {
-        // تحديد القالب المناسب حسب التقرير النشط
         const templateId = activeReport === 'initial' ? 'initial-report-doc' : 'ministerial-final-doc';
         const content = document.getElementById(templateId);
         let printSection = document.getElementById('print-section');
@@ -273,7 +286,7 @@ const SummaryReport: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 print:hidden">
                 <div className="space-y-8">
-                    {/* --- واجهة الإدخال: تختلف حسب التقرير المختار --- */}
+                    {/* --- واجهة الإدخال --- */}
                     {activeReport === 'initial' ? (
                         <div className="bg-slate-900/80 p-8 rounded-3xl border border-slate-800 space-y-6 shadow-xl animate-slideDown">
                             <div className="flex items-center gap-3 border-b border-slate-800 pb-4"><Landmark className="text-amber-400 w-8 h-8" /><h3 className="text-white font-black text-xl">بيانات انطلاق الدورة</h3></div>
@@ -315,7 +328,7 @@ const SummaryReport: React.FC = () => {
                 </div>
 
                 <div className="relative">
-                    {/* --- المعاينة المباشرة: تختلف حسب التقرير --- */}
+                    {/* --- المعاينة المباشرة --- */}
                     <div className="sticky top-40 bg-white text-black p-12 rounded-lg shadow-2xl overflow-y-auto max-h-[85vh] border border-slate-300 font-official scrollbar-hide" id="report-paper-view">
                          {activeReport === 'initial' ? (
                              <InitialReportDoc institution={institution} stats={initialReportStats} instructors={allInstructorsList} data={reports.initial} />
@@ -326,16 +339,14 @@ const SummaryReport: React.FC = () => {
                 </div>
             </div>
 
-            {/* --- قوالب الطباعة (مخفية) --- */}
+            {/* --- قوالب الطباعة --- */}
             
-            {/* 1. قالب التقرير الأولي */}
             <div id="initial-report-doc" className="hidden">
                 <div className="bg-white text-black p-[15mm] min-h-screen font-serif" style={{ direction: 'rtl' }}>
                     <InitialReportDoc institution={institution} stats={initialReportStats} instructors={allInstructorsList} data={reports.initial} />
                 </div>
             </div>
 
-            {/* 2. قالب التقرير الوزاري المفصل (S1, S2, Final) */}
             <div id="ministerial-final-doc" className="hidden">
                  <div className="bg-white text-black p-[20mm] min-h-screen relative overflow-hidden font-official shadow-none">
                       <div className="text-watermark">وزارة التربية الوطنية</div>
@@ -378,7 +389,7 @@ const StrategicSection: React.FC<{ label: string, value: string, onChange: (v: s
     </div>
 );
 
-// --- 1. قالب التقرير الأولي (تم تعديل عمود الرتبة) ---
+// --- 1. قالب التقرير الأولي (المعدل) ---
 const InitialReportDoc: React.FC<{ institution: any, stats: any[], instructors: any[], data: SummaryData }> = ({ institution, stats, instructors, data }) => {
     const totalTrainees = stats.reduce((acc, s) => acc + s.total, 0);
     const targetLevel = stats[0]?.level || 'ابتدائي';
@@ -406,9 +417,7 @@ const InitialReportDoc: React.FC<{ institution: any, stats: any[], instructors: 
                         <tbody>
                             {stats.map((s, i) => (
                                 <tr key={i}>
-                                    {/* --- التعديل تم هنا: إظهار الرتبة فقط بدون الطور --- */}
                                     <td className="border border-black font-bold">{s.rank}</td>
-                                    
                                     <td className="border border-black">{s.spec}</td>
                                     <td className="border border-black">{s.level}</td>
                                     <td className="border border-black font-bold">{s.total}</td>
@@ -427,7 +436,6 @@ const InitialReportDoc: React.FC<{ institution: any, stats: any[], instructors: 
                         <thead className="bg-gray-100"><tr><th className="w-40">الرتبة</th><th>قائمة المشرفين على العملية التكوينية</th><th>قائمة المؤطرين</th><th>ملاحظات</th></tr></thead>
                         <tbody>
                             <tr>
-                                {/* يمكنك أيضاً تعديل هذا السطر إذا أردت إزالة كلمة "التعليم" */}
                                 <td className="border border-black font-black">أستاذ التعليم ال{targetLevel}</td>
                                 <td className="border border-black text-right px-2 leading-relaxed font-bold">
                                     <p>• {institution.director} (المدير البيداغوجي)</p>
@@ -467,7 +475,7 @@ const InitialReportDoc: React.FC<{ institution: any, stats: any[], instructors: 
     );
 };
 
-// --- 2. قالب التقرير الوزاري المفصل (S1, S2, Final) ---
+// --- 2. قالب التقرير الوزاري المفصل ---
 const ProfessionalMinisterialTemplate: React.FC<{ data: SummaryData, institution: InstitutionConfig, analytics: any, specialties: Specialty[], isPrint?: boolean }> = ({ data, institution, analytics, specialties, isPrint }) => {
     if (!analytics) return <div className="text-center p-20 text-gray-400 italic font-tajawal">في انتظار البيانات...</div>;
     const { currentSession, allAbsentees, executionTable, total, maleCount, femaleCount, municipalityTable, specStats } = analytics;
@@ -616,7 +624,7 @@ const ProfessionalMinisterialTemplate: React.FC<{ data: SummaryData, institution
                 </table>
             </div>
 
-            {/* NARRATIVE SECTIONS - SIMPLIFIED */}
+            {/* NARRATIVE SECTIONS */}
             <div className="space-y-10 mb-10">
                 {['introduction', 'pedagogicalActivities', 'administrativeConditions', 'difficulties', 'recommendations', 'conclusion'].map((field, i) => data[field as keyof SummaryData] && (
                     <div key={i} className="mb-6">
