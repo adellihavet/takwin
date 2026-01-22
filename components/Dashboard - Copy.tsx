@@ -50,86 +50,35 @@ const Dashboard: React.FC = () => {
     };
 
     const exportFullDatabase = () => {
-        // تجميع كافة مفاتيح النظام في كائن واحد
         const fullDB = {
-            // 1. الأساسيات
-            institution: JSON.parse(localStorage.getItem('takwin_institution_db') || '{}'),
-            trainee_counts: JSON.parse(localStorage.getItem('takwin_trainee_counts') || '{}'),
-            specialties: JSON.parse(localStorage.getItem('takwin_specialties_db') || 'null'),
-            
-            // 2. المتربصون والطاقم
+            institution: config,
+            trainee_counts: counts,
+            trainers: trainers,
             trainees: JSON.parse(localStorage.getItem('takwin_trainees_db') || '[]'),
-            trainers: JSON.parse(localStorage.getItem('takwin_trainers_db') || '{}'),
-            trainer_ranks: JSON.parse(localStorage.getItem('takwin_trainer_ranks') || '{}'),
-            
-            // 3. التوازيع الزمنية والإسنادات
-            schedule: JSON.parse(localStorage.getItem('takwin_schedule') || '[]'),
-            assignments: JSON.parse(localStorage.getItem('takwin_assignments') || '[]'),
-            
-            // 4. التقييم والحضور
             grades: JSON.parse(localStorage.getItem('takwin_grades_db') || '{}'),
-            attendance: JSON.parse(localStorage.getItem('takwin_attendance_db') || '{}'),
-            
-            // 5. الامتحانات
-            exam_schedule: JSON.parse(localStorage.getItem('takwin_exam_schedule') || '[]'),
-            exam_rooms: JSON.parse(localStorage.getItem('takwin_exam_rooms') || '[]'),
-            exam_proctors: JSON.parse(localStorage.getItem('takwin_exam_proctors') || '[]'),
-            external_proctors: JSON.parse(localStorage.getItem('takwin_external_proctors') || '[]'),
-            
-            // 6. التقارير
-            reports: JSON.parse(localStorage.getItem('takwin_reports_db') || 'null'),
-            
-            // وسم النسخة
-            export_date: new Date().toISOString(),
-            version: "2.0"
+            attendance: JSON.parse(localStorage.getItem('takwin_attendance_db') || '{}')
         };
-        
-        const fileName = `النسخة_الاحتياطية_${config.wilaya || 'مركز'}_${new Date().toLocaleDateString('ar-DZ').replace(/\//g, '-')}.json`;
-        downloadJSON(fullDB, fileName);
+        downloadJSON(fullDB, `takwin_db_backup_${config.wilaya || 'unnamed'}.json`);
     };
 
     const importFullDatabase = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        
-        if (!confirm('تحذير: سيقوم الاستيراد بمسح كافة البيانات الحالية واستبدالها ببيانات الملف المرفوع. هل تريد الاستمرار؟')) {
-            if (fileInputRef.current) fileInputRef.current.value = '';
-            return;
-        }
-
         try {
             const data = await readJSONFile(file);
-            
-            // قاموس الربط بين مفاتيح الكائن ومفاتيح الذاكرة المحلية
-            const storageMap: Record<string, string> = {
-                institution: 'takwin_institution_db',
-                trainee_counts: 'takwin_trainee_counts',
-                specialties: 'takwin_specialties_db',
-                trainees: 'takwin_trainees_db',
-                trainers: 'takwin_trainers_db',
-                trainer_ranks: 'takwin_trainer_ranks',
-                schedule: 'takwin_schedule',
-                assignments: 'takwin_assignments',
-                grades: 'takwin_grades_db',
-                attendance: 'takwin_attendance_db',
-                exam_schedule: 'takwin_exam_schedule',
-                exam_rooms: 'takwin_exam_rooms',
-                exam_proctors: 'takwin_exam_proctors',
-                external_proctors: 'takwin_external_proctors',
-                reports: 'takwin_reports_db'
-            };
-
-            // توزيع البيانات على الذاكرة المحلية
-            Object.entries(storageMap).forEach(([dataKey, storageKey]) => {
-                if (data[dataKey] !== undefined && data[dataKey] !== null) {
-                    localStorage.setItem(storageKey, JSON.stringify(data[dataKey]));
-                }
-            });
-
-            alert('تم استيراد كافة البيانات بنجاح (الجداول، التقارير، المتربصون، النقاط). سيتم الآن تحديث الصفحة.');
+            if (data.institution) {
+                setConfig(data.institution);
+                localStorage.setItem('takwin_institution_db', JSON.stringify(data.institution));
+            }
+            if (data.trainers) {
+                setTrainers(data.trainers);
+                localStorage.setItem('takwin_trainers_db', JSON.stringify(data.trainers));
+            }
+            if (data.trainees) localStorage.setItem('takwin_trainees_db', JSON.stringify(data.trainees));
+            alert('تم استيراد قاعدة البيانات بنجاح');
             window.location.reload();
         } catch (err) {
-            alert('خطأ: تأكد من اختيار ملف قاعدة بيانات (.json) صحيح وغير تالف.');
+            alert('خطأ في استيراد الملف. تأكد من أنه ملف JSON صالح.');
         }
     };
 
@@ -188,11 +137,11 @@ const Dashboard: React.FC = () => {
                         <p className="text-slate-400">إدارة البيانات الشاملة والطاقم التربوي - دورة 2026</p>
                     </div>
                     <div className="flex gap-3">
-                        <button onClick={exportFullDatabase} className="bg-dzgreen-600 hover:bg-dzgreen-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 border border-dzgreen-400 transition-all shadow-lg shadow-dzgreen-900/40">
-                            <ArrowDownToLine size={18}/> تصدير قاعدة البيانات الشاملة
+                        <button onClick={exportFullDatabase} className="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 border border-slate-600 transition-all">
+                            <ArrowDownToLine size={18}/> حفظ قاعدة البيانات
                         </button>
                         <button onClick={() => fileInputRef.current?.click()} className="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 border border-slate-600 transition-all">
-                            <UploadCloud size={18}/> استيراد نسخة سابقة
+                            <UploadCloud size={18}/> استيراد
                         </button>
                         <input type="file" ref={fileInputRef} onChange={importFullDatabase} className="hidden" accept=".json" />
                     </div>
